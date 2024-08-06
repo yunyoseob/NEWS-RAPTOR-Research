@@ -1,16 +1,19 @@
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import CharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from app.vectordb.vectordb import VectorDB
 import pandas as pd
 
 class RAG:
-    def __init__(self, chunk_size=1000, overlap=200):
+    def __init__(self, chunk_size=1000, overlap=0):
         self.chunk_size=chunk_size
         self.overlap=overlap
+        self.embed_model = OpenAIEmbeddings()
     
     async def split_chunk_text(self, text):
-        splitter = CharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
-        chunks = splitter.split_text(text)
-        return chunks
+        text_splitter = CharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
+        texts = text_splitter.split_text(text)
+        return texts
     
     async def get_documents_by_news_url(self, url):
         print(f"Processing URL: {url}")
@@ -22,7 +25,24 @@ class RAG:
             print(f"Error processing URL {url}: {e}")
             documents = None
         return documents
+    
+    async def add_vectordb(self, texts):
+        print(f"texts : {texts}")
+        embeddings = []
+        for text in texts:
+            embedding = await self.embed_model.embed(text)
+            embeddings.append(embedding)
 
+        vectordb = VectorDB()
+        rag_collection = vectordb.get_vectordb("rag_collection")
+        # 벡터를 "rag_collection"에 삽입
+        entities = [
+            [i for i in range(len(embeddings))],  # ids
+            embeddings  # embeddings
+        ]
+        #rag_collection.insert(entities)
+        return 1
+        
     async def load_data(self, data):
         news_data_url = data['URL']
         print(news_data_url)
@@ -36,15 +56,16 @@ class RAG:
             print(f"idx : {idx}, url : {url}")
             if pd.notna(url):  # Check if url is not NaN
                 try:
+                    # Document Loader
                     documents= await self.get_documents_by_news_url(url)
                     if documents is not None:
-                        for doc in documents:
-                            text = doc.page_content
-                            chunks = await self.split_chunk_text(text)
-                            print(f"Chunks for URL {url}:")
-                            for chunk in chunks:
-                                print(chunk)
-                        news_cnt += 1
+                        for document in documents:
+                            text = document.page_content
+                            # Split Text
+                            texts = await self.split_chunk_text(text)
+                            # Embedding
+                            await self.add_vectordb(texts)
+                    news_cnt += 1
                 except Exception as e:
                     print(f"Failed to process URL {url}: {e}")
                     pass
