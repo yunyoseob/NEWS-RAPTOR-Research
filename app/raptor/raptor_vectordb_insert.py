@@ -6,7 +6,7 @@ class RAPTOR:
     def __init__(self, chunk_size=1000, overlap=200):
         self.chunk_size=chunk_size
         self.overlap=overlap
-        self.embed_model = OpenAIEmbeddings()
+        self.embed_model = OpenAIEmbeddings(model="text-embedding-3-large")
     
     async def split_chunk_text(self, text):
         splitter = CharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
@@ -45,7 +45,7 @@ class RAPTOR:
                             print(f"Chunks for URL {url}:")
                             for chunk in chunks:
                                 print(chunk)
-                                embed_model.embed_do
+                                
                         news_cnt += 1
                 except Exception as e:
                     print(f"Failed to process URL {url}: {e}")

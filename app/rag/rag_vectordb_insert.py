@@ -1,19 +1,23 @@
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from app.vectordb.vectordb import VectorDB
+from langchain_core.documents import Document
+from app.vectordb.vectordb import get_vectorstore
 import pandas as pd
 
 class RAG:
     def __init__(self, chunk_size=1000, overlap=0):
         self.chunk_size=chunk_size
         self.overlap=overlap
-        self.embed_model = OpenAIEmbeddings()
+        self.embed = OpenAIEmbeddings(model="text-embedding-3-large")
     
-    async def split_chunk_text(self, text):
-        text_splitter = CharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
-        texts = text_splitter.split_text(text)
-        return texts
+    async def split_chunk_text(self, document):
+        try:
+            text_splitter = CharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
+            split_document = text_splitter.split_documents([document])
+        except Exception as e:
+            print(f"Split document failed : {e}")
+        return split_document
     
     async def get_documents_by_news_url(self, url):
         print(f"Processing URL: {url}")
@@ -26,21 +30,13 @@ class RAG:
             documents = None
         return documents
     
-    async def add_vectordb(self, texts):
-        print(f"texts : {texts}")
-        embeddings = []
-        for text in texts:
-            embedding = await self.embed_model.embed(text)
-            embeddings.append(embedding)
-
-        vectordb = VectorDB()
-        rag_collection = vectordb.get_vectordb("rag_collection")
-        # 벡터를 "rag_collection"에 삽입
-        entities = [
-            [i for i in range(len(embeddings))],  # ids
-            embeddings  # embeddings
-        ]
-        #rag_collection.insert(entities)
+    async def add_vectordb(self, split_document):
+        try:
+            vectordb = get_vectorstore("rag_collection")
+            vectordb.add_documents(split_document)
+            print("vectordb add documents!!!")
+        except Exception as e:
+            print(f"Vector DB insert failed : {e}")
         return 1
         
     async def load_data(self, data):
@@ -60,11 +56,10 @@ class RAG:
                     documents= await self.get_documents_by_news_url(url)
                     if documents is not None:
                         for document in documents:
-                            text = document.page_content
                             # Split Text
-                            texts = await self.split_chunk_text(text)
+                            split_document = await self.split_chunk_text(document)
                             # Embedding
-                            await self.add_vectordb(texts)
+                            await self.add_vectordb(split_document)
                     news_cnt += 1
                 except Exception as e:
                     print(f"Failed to process URL {url}: {e}")

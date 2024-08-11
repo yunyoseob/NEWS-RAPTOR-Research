@@ -1,52 +1,43 @@
+from functools import lru_cache
 import os
-from pymilvus import MilvusClient, DataType
 
-class VectorDB:
-    def __init__(self):
-        self.data_dir = os.path.join(os.path.dirname(__file__), '..', 'milvus', 'data')
-        self.db_path = os.path.join(self.data_dir, 'korean_news_vector.db')
-        self.client = MilvusClient(self.db_path) # MilvusClient 생성
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
-    def create_vectordb_collection(self, collection_name):
-        # 이미 존재하는지 확인 후 생성
-        if not self.client.has_collection(collection_name):
-            # 1. Create schema
-            schema = self.client.create_schema(
-                auto_id=False,  # 자동 ID 생성 비활성화
-                enable_dynamic_field=False  # 동적 필드 활성화 비활성화
-            )
-            
-            # 2. Add fields to schema
-            schema.add_field(field_name="my_id", datatype=DataType.INT64, is_primary=True)
-            schema.add_field(field_name="my_vector", datatype=DataType.FLOAT_VECTOR, dim=5)
-            
-            # 3. Prepare index parameters
-            index_params = self.client.prepare_index_params()
+from langchain_postgres.vectorstores import PGVector
+from sqlalchemy import text
+from langchain_openai import OpenAIEmbeddings
 
-            # 4. Add indexes
-            index_params.add_index(
-                field_name="my_id",
-                index_type="STL_SORT"
-            )
+vectordb_HOST=os.getenv('vectordb_HOST')
+vectordb_PORT=os.getenv('vectordb_PORT')
+vectordb_DB=os.getenv('vectordb_DB')
+vectordb_USER=os.getenv('vectordb_USER')
+vectordb_PW=os.getenv('vectordb_PW')
 
-            index_params.add_index(
-                field_name="my_vector",
-                index_type="AUTOINDEX",  # IVF_FLAT 인덱스 사용
-                metric_type="L2",  # L2 거리 측정 방식
-                params={"nlist": 1024}  # IVF_FLAT의 nlist 설정
-            )
+@lru_cache(maxsize=128)
+def get_vectorstore(collection_name: str) -> PGVector:
+    connection_string =(
+                    f"postgresql+psycopg://{vectordb_USER}:{vectordb_PW}@"
+                    f"{vectordb_HOST}:{vectordb_PORT}/{vectordb_DB}"
+                )
 
-            # 5. Create a collection
-            self.client.create_collection(
-                collection_name=collection_name,
-                schema=schema,
-                index_params=index_params
-            )
-            print(f"Created collection: {collection_name}")
-        else:
-            print(f"Collection already exists: {collection_name}")
-        
-    def get_vectordb(self, collection_name):
-        self.create_vectordb_collection(collection_name)
-        collection = self.client.get_collection(collection_name)
-        return collection
+    try:    
+        engine = create_engine(
+            connection_string,
+            pool_size=10,                    # 기본적으로 유지할 연결의 수를 설정합니다.
+            max_overflow=20,                 # 기본 풀 크기를 초과하여 추가로 생성할 수 있는 연결의 수를 설정합니다.
+            pool_timeout=30,                 # 연결 풀이 고갈되었을 때 새 연결을 얻기 위해 대기할 최대 시간을 설정합니다.
+            pool_pre_ping=True,              # 연결이 유효한지 미리 확인하여 유효하지 않은 경우 새로운 연결을 생성합니다.
+            pool_recycle=1800,               # 일정 시간(30분) 동안 사용되지 않은 연결을 자동으로 재활용합니다.
+            pool_reset_on_return='rollback'  # 연결이 반환될 때 트랜잭션을 롤백하여 일관된 상태를 유지합니다.
+        )
+        vectorstore =  PGVector(
+                        connection=engine,
+                        embeddings= OpenAIEmbeddings(model="text-embedding-3-large"),
+                        collection_name=collection_name
+                    )
+    except OperationalError as e:
+        print(f"Database connection failed: {e}")
+        raise
+
+    return vectorstore
