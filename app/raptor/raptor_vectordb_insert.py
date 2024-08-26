@@ -1,6 +1,7 @@
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
+import pandas as pd
 
 class RAPTOR:
     def __init__(self, chunk_size=1000, overlap=200):
@@ -29,6 +30,7 @@ class RAPTOR:
         print(news_data_url)
         print(f"news_data_url size : {news_data_url.size}")
         news_cnt = 0
+        documents_list = []
 
         for idx, url  in enumerate(news_data_url):
             if news_cnt >= 10:
@@ -38,15 +40,19 @@ class RAPTOR:
             if pd.notna(url):  # Check if url is not NaN
                 try:
                     documents= await self.get_documents_by_news_url(url)
-                    if documents is not None:
-                        for doc in documents:
-                            text = doc.page_content
-                            chunks = await self.split_chunk_text(text)
-                            print(f"Chunks for URL {url}:")
-                            for chunk in chunks:
-                                print(chunk)
-                                
-                        news_cnt += 1
+                    documents_list.append(documents)
+                    #if documents is not None:
+                    #    for doc in documents:
+                    #        text = doc.page_content
+                    #        chunks = await self.split_chunk_text(text)
+                    #        print(f"Chunks for URL {url}:")
+                    #        for chunk in chunks:
+                    #            print(chunk)
+                    #            
+                    news_cnt += 1
                 except Exception as e:
                     print(f"Failed to process URL {url}: {e}")
                     pass
+        for docs_idx in range(0, len(documents_list)):
+            docs = documents_list[docs_idx]
+            # 10개의 docs를 RAPTOR를 한 번에 태워서 토픽별로 RAPTOR에 저장
