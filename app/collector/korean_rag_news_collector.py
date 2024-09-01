@@ -3,21 +3,20 @@ import pandas as pd
 import asyncio
 from tqdm import tqdm
 from app.rag.rag_vectordb_insert import RAG
-from dotenv import load_dotenv
+from app.config import get_settings
 
-load_dotenv()
-PROJECT_ROOT_DIR = os.getenv('PROJECT_ROOT_DIR')
-date_list = ["20240715","20240716","20240717","20240718","20240719"]
+config = get_settings()
+date_list = ["20240826","20240827","20240828","20240829","20240830"]
 
 async def get_excel_file_dir_list():
-    data_dir = os.path.join(PROJECT_ROOT_DIR, 'data')
+    data_dir = os.path.join(config.PROJECT_ROOT_DIR, 'data')
     excel_file_dir_list=[]
     for date in date_list:
         excel_file_dir = data_dir + "/" + date
         excel_file_dir_list.append(excel_file_dir)
     return excel_file_dir_list
 
-async def get_file_list(excel_file_dir: str):
+async def get_file_list(excel_file_dir: str) -> list[str]:
     file_list = []
     absolute_path = os.path.abspath(excel_file_dir)
     if os.path.exists(absolute_path):
@@ -33,8 +32,8 @@ async def news_collect_start():
 
     # 1. 날짜 디렉토리
     for idx, excel_file_dir in enumerate(tqdm(excel_file_dir_list, desc="Start Read Weekly News By RAG")):        
-        news_date = date_list[idx]
-        print(f"Current Collect News Date : {news_date}")
+        news_day = date_list[idx]
+        print(f"Current Collect News Date : {news_day}")
         # 2. 날짜별로 주간 이슈 엑셀 파일
         daily_topic_list = await get_file_list(excel_file_dir)
         print(f"daily_topic_list : {daily_topic_list}")

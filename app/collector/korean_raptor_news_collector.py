@@ -3,14 +3,14 @@ import pandas as pd
 import asyncio
 from tqdm import tqdm
 from app.raptor.raptor_vectordb_insert import RAPTOR
-from dotenv import load_dotenv
 
-load_dotenv()
-PROJECT_ROOT_DIR = os.getenv('PROJECT_ROOT_DIR')
-date_list = ["20240715","20240716","20240717","20240718","20240719"]
+from app.config import get_settings
+
+config = get_settings()
+date_list = ["20240826","20240827","20240828","20240829","20240830"]
 
 async def get_excel_file_dir_list():
-    data_dir = os.path.join(PROJECT_ROOT_DIR, 'data')
+    data_dir = os.path.join(config.PROJECT_ROOT_DIR, 'data')
     excel_file_dir_list=[]
     for date in date_list:
         excel_file_dir = data_dir + "/" + date
@@ -33,13 +33,13 @@ async def news_collect_start():
 
     # 1. 날짜 디렉토리
     for idx, excel_file_dir in enumerate(tqdm(excel_file_dir_list, desc="Start Read Weekly News By RAPTOR")):
-        news_date = date_list[idx]
-        print(f"Current Collect News Date : {news_date}")
+        news_day = date_list[idx]
+        print(f"Current Collect News Date : {news_day}")
         daily_topic_list = await get_file_list(excel_file_dir)
 
         # 해당 날짜의 상위 10개 뉴스 ("topic"의 주제로 뉴스들을 재귀적 요약 처리)
         for file_idx, file_name in enumerate(tqdm(daily_topic_list, desc="Start Read Daily News")):
-            print(f"{news_date}'s read file : {file_idx}")
+            print(f"{news_day}'s read file : {file_idx}")
             file_path = excel_file_dir + "/" + file_name
             data = pd.read_excel(file_path)
             # 각 토픽별로 10개의 뉴스들이 들어감 (하나의 날짜에 총 100개의 기사)
