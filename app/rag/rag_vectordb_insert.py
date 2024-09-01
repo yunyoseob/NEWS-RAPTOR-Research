@@ -1,15 +1,14 @@
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain_core.documents import Document
 from app.vectordb.vectordb import get_vectorstore
 import pandas as pd
 
 class RAG:
     def __init__(self, chunk_size=1000, overlap=0):
+        from app import get_openai_embeddings
         self.chunk_size=chunk_size
         self.overlap=overlap
-        self.embed = OpenAIEmbeddings(model="text-embedding-3-large")
+        self.embed = get_openai_embeddings()
     
     async def split_chunk_text(self, document):
         try:

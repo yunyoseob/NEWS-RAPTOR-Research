@@ -2,18 +2,12 @@ import os
 import gradio as gr
 from dotenv import load_dotenv
 import openai
+from app.config import get_settings
 
-# load .env
-# Write Your API Key In .env
-load_dotenv()
-openai_api_key = os.getenv('OPENAI_API_KEY')
+config = get_settings()
 
 # OpenAI API Key Check
-if openai_api_key:
-    openai.api_key = openai_api_key 
-else:
-    print("Error: OPENAI_API_KEY is not set in the .env file")
-    exit(1)
+openai.api_key = config.OPENAI_API_KEY 
 
 def get_ai_answer(message, history):
     response = openai.ChatCompletion.create(

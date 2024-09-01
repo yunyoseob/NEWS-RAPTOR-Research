@@ -37,10 +37,17 @@ async def news_collect_start():
         print(f"Current Collect News Date : {news_date}")
         daily_topic_list = await get_file_list(excel_file_dir)
 
-        # 해당 날짜의 상위 10개 뉴스
-        for file_name in tqdm(daily_topic_list, desc="Start Read Daily News"):
+        # 해당 날짜의 상위 10개 뉴스 ("topic"의 주제로 뉴스들을 재귀적 요약 처리)
+        for file_idx, file_name in enumerate(tqdm(daily_topic_list, desc="Start Read Daily News")):
+            print(f"{news_date}'s read file : {file_idx}")
             file_path = excel_file_dir + "/" + file_name
             data = pd.read_excel(file_path)
             # 각 토픽별로 10개의 뉴스들이 들어감 (하나의 날짜에 총 100개의 기사)
-            await raptor.load_data(data)
+            result = await raptor.load_data(data)
+        # day: 각 "topic"에 대한 summarize된 내용을 바탕으로 재귀적 요약 처리
+
+    # weekly: 각 "day"에 대한 summarize된 내용을 바탕으로 재귀적 요약 처리
+
+
+
 asyncio.run(news_collect_start())
