@@ -10,7 +10,8 @@
 
 ## 주간 이슈 뉴스 데이터 수집 방법
 
-![image](https://github.com/user-attachments/assets/52eb5d22-852e-4876-8e62-bc97ece6f8e0)
+![image](https://github.com/user-attachments/assets/2c9e809d-7b83-4cb3-9fc5-98e8034241c4)
+
 
 1. 날짜별로 주간 이슈에 있는 뉴스 데이터를 **빅 카인즈의 뉴스검색.분석에서 엑셀로 데이터 다운로드**
 
