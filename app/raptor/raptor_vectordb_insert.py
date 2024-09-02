@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Tuple
-from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.document_loaders import NewsURLLoader
 import pandas as pd
 import numpy as np
 import umap
@@ -20,8 +20,15 @@ class RAPTOR:
     async def get_documents_by_news_url(self, url):
         try:
             # Document Load
-            loader = WebBaseLoader(url)
-            documents = loader.load()
+            urls = []
+            urls.append(url)
+            loader = NewsURLLoader(
+                urls=urls, 
+                text_mode=True,
+                nlp=True,
+                show_progress_bar =True
+            )
+            documents = await loader.aload()
         except Exception as e:
             print(f"Error processing URL {url}: {e}")
             documents = None

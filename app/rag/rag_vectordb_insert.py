@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.document_loaders import NewsURLLoader
 from langchain.text_splitter import CharacterTextSplitter
 from app.vectordb.vectordb import get_vectorstore
 import pandas as pd
@@ -22,8 +22,15 @@ class RAG:
         print(f"Processing URL: {url}")
         try:
             # Document Load
-            loader = WebBaseLoader(url)
-            documents = loader.load()
+            urls = []
+            urls.append(url)
+            loader = NewsURLLoader(
+                urls=urls, 
+                text_mode=True,
+                nlp=True,
+                show_progress_bar =True
+            )
+            documents = await loader.aload()
         except Exception as e:
             print(f"Error processing URL {url}: {e}")
             documents = None
