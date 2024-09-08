@@ -10,7 +10,6 @@ def get_chatllm_openai():
     return ChatOpenAI(
         model="gpt-4o",
         temperature=0.01,
-        max_tokens=1000,  
         timeout=None,
         api_key=config.OPENAI_API_KEY
     )
