@@ -45,17 +45,16 @@ class RAG:
             print(f"Vector DB insert failed : {e}")
         return 1
         
-    async def load_data(self, data):
+    async def load_data(self, data, metadata):
         news_data_url = data['URL']
         print(news_data_url)
         print(f"news_data_url size : {news_data_url.size}")
         news_cnt = 0
-
+        # print(f"load data Info : day : {day}, topic : {topic}, news_count : {news_count}, url : {url}, news_length : {news_length}")
         for idx, url  in enumerate(news_data_url):
             if news_cnt >= 10:
                 print(f"Extract news text finish !!! : news count : {news_cnt}")
                 break
-            print(f"idx : {idx}, url : {url}")
             if pd.notna(url):  # Check if url is not NaN
                 try:
                     # Document Loader

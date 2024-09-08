@@ -39,6 +39,9 @@ async def news_collect_start():
         print(f"daily_topic_list : {daily_topic_list}")
         # 3. 날짜별로 주간 이슈 엑셀 파일 읽어서 각 파일별로 10개의 기사 추출 후, RAG 구성
         for file_name in tqdm(daily_topic_list, desc="Start Read Daily News"):
+            metadata={}
+            metadata["day"]=news_day    # 주간 이슈의 날짜
+            metadata["topic"]=file_name # 주간 이슈의 해당 날짜의 토픽 이름
             file_path = excel_file_dir + "/" + file_name
             data = pd.read_excel(file_path)
             await rag.load_data(data)
