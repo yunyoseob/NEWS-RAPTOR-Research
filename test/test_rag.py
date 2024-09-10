@@ -1,16 +1,9 @@
-"""
-https://platform.openai.com/docs/models/gpt-4o
-
-GPT-4o: 
-CONTEXT WINDOW 128,000 tokens
-MAX OUTPUT TOKENS: 4096 tokens
-Training Data: Up to Oct 2023
-"""
 import pandas as pd
 import asyncio
-from app.raptor.raptor_vectordb_insert import RAPTOR
-async def test_raptor():
-    raptor = RAPTOR()
+from app.rag.rag_vectordb_insert import RAG
+
+async def test_rag():
+    rag = RAG()
     metadata = {}
     metadata["week"]="8월 5주"
     metadata["day"]="20240830"
@@ -24,7 +17,6 @@ async def test_raptor():
     # extract url from data
     news_cnt = 0
     documents_list = []
-    text_lists = []
     for idx, row in data.iterrows():
         url = row['URL']
         metadata["news_index"]= news_cnt + 1
@@ -36,15 +28,14 @@ async def test_raptor():
             break
         if pd.notna(url):  # Check if url is not NaN
             try:
-                documents= await raptor.get_documents_by_news_url(url)
+                documents= await rag.get_documents_by_news_url(url)
                 if documents is not None:
                     for document in documents:
                         # Split Text
                         text = document.page_content 
-                        text_list = await raptor.split_chunk_text(text)
-                        insert_docs = await raptor.insert_additional_info(text_list=text_list, metadata=metadata, meta_level="news_level")
+                        text_list = await rag.split_chunk_text(text)
+                        insert_docs = await rag.insert_additional_info(text_list=text_list, metadata=metadata, meta_level="news_level")
                         # text add
-                        text_lists.extend(text_list)
                         documents_list.extend(insert_docs)       
                 news_cnt += 1
             except Exception as e:
@@ -52,12 +43,6 @@ async def test_raptor():
                 pass
     print("=======================================")
     print(f"documents_list length : {len(documents_list)}")
-    print(f"text_lists length : {len(text_lists)}")
-    results = await raptor.recursive_embed_cluster_summarize(text_lists, level=1, n_levels=3)
-    for level in sorted(results.keys()):
-        df_cluster = results[level][0]
-        df_summary = results[level][1]
-        df_cluster.to_csv(f"../result/test_raptor_result_{level}_cluster.csv", index=False)
-        df_summary.to_csv(f"../result/test_raptor_result_{level}_summary.csv", index=False)
+    print(f"documents_list : {documents_list}")
 
-asyncio.run(test_raptor())
+asyncio.run(test_rag())

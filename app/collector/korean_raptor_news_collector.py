@@ -47,7 +47,4 @@ async def news_collect_start():
         # day: 각 "topic"에 대한 summarize된 내용을 바탕으로 재귀적 요약 처리
 
     # weekly: 각 "day"에 대한 summarize된 내용을 바탕으로 재귀적 요약 처리
-
-
-
 asyncio.run(news_collect_start())

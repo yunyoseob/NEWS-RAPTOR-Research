@@ -1,22 +1,14 @@
+from typing import Dict, List
 from langchain_community.document_loaders import NewsURLLoader
-from langchain.text_splitter import CharacterTextSplitter
+from langchain_core.documents import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.vectordb.vectordb import get_vectorstore
 import pandas as pd
 
 class RAG:
-    def __init__(self, chunk_size=1000, overlap=0):
-        from app import get_openai_embeddings
+    def __init__(self, chunk_size=1000, overlap=200):
         self.chunk_size=chunk_size
         self.overlap=overlap
-        self.embed = get_openai_embeddings()
-    
-    async def split_chunk_text(self, document):
-        try:
-            text_splitter = CharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
-            split_document = text_splitter.split_documents([document])
-        except Exception as e:
-            print(f"Split document failed : {e}")
-        return split_document
     
     async def get_documents_by_news_url(self, url):
         print(f"Processing URL: {url}")
@@ -36,22 +28,52 @@ class RAG:
             documents = None
         return documents
     
-    async def add_vectordb(self, split_document):
+    async def split_chunk_text(self, text: str) -> List[str]:
+        try:
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.overlap)
+            split_texts = text_splitter.split_text(text)
+        except Exception as e:
+            print(f"Split texts failed : {e}")
+        return split_texts
+
+    async def insert_additional_info(self, text_list: list[str], metadata: Dict, meta_level: str) -> List[Document]:
+        """
+        Description: 
+        text_list : news text list (leaf node)
+        metadata : week, day, topic, news_index, "제목", "뉴스 식별자", "URL"
+        """
+        insert_docs = []
+        for textIdx in range(len(text_list)):
+            text = text_list[textIdx]
+            metadata[meta_level] = 0
+            metadata["topic_level"]=0
+            metadata["day_level"]=0
+            insert_docs.append(Document(page_content=text, metadata=metadata))
+        return insert_docs
+
+    async def insert_vectordb(self, documents_list:List[Document], metadata: Dict, meta_level: str):
         try:
             vectordb = get_vectorstore("rag_collection")
-            vectordb.add_documents(split_document)
+            vectordb.add_documents(documents_list)
             print("vectordb add documents!!!")
         except Exception as e:
             print(f"Vector DB insert failed : {e}")
         return 1
-        
+
     async def load_data(self, data, metadata):
-        news_data_url = data['URL']
-        print(news_data_url)
-        print(f"news_data_url size : {news_data_url.size}")
+        """
+        Description: 
+        data : topic dataframe data
+        metadata : week, day, topic
+        """
+        # extract url from data
         news_cnt = 0
-        # print(f"load data Info : day : {day}, topic : {topic}, news_count : {news_count}, url : {url}, news_length : {news_length}")
-        for idx, url  in enumerate(news_data_url):
+        for idx, row in data.iterrows():
+            url = row['URL']
+            metadata["news_index"]= news_cnt + 1
+            metadata["제목"] = row['제목']
+            metadata["뉴스 식별자"] = row['뉴스 식별자']
+            metadata["URL"] = url
             if news_cnt >= 10:
                 print(f"Extract news text finish !!! : news count : {news_cnt}")
                 break
@@ -60,11 +82,13 @@ class RAG:
                     # Document Loader
                     documents= await self.get_documents_by_news_url(url)
                     if documents is not None:
-                        for document in documents:
+                        for document in documents:                            
                             # Split Text
-                            split_document = await self.split_chunk_text(document)
+                            text = document.page_content 
+                            text_list = await self.split_chunk_text(text)
+                            insert_docs = await self.insert_additional_info(text_list=text_list, metadata=metadata, meta_level="news_level")
                             # Embedding
-                            await self.add_vectordb(split_document)
+                            await self.insert_vectordb(insert_docs)
                     news_cnt += 1
                 except Exception as e:
                     print(f"Failed to process URL {url}: {e}")
