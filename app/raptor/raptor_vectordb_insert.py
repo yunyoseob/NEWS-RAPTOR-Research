@@ -13,11 +13,13 @@ class RAPTOR:
     # https://github.com/langchain-ai/langchain/blob/master/cookbook/RAPTOR.ipynb
     def __init__(self, chunk_size=1000, overlap=200):
         from app.assistant import get_chatllm_openai, get_openai_embeddings
+        from app.vectordb.vectordb import get_vectorstore
         self.chunk_size=chunk_size
         self.overlap=overlap
         self.embd = get_openai_embeddings()
         self.model = get_chatllm_openai()
         self.RANDOM_SEED = 224  # Fixed seed for reproducibility
+        self.vectordb = get_vectorstore("raptor_collection")
     
     async def get_documents_by_news_url(self, url: str) -> List[Document]:
         try:
@@ -260,7 +262,9 @@ class RAPTOR:
         """
         Description: 
         text_list : news text list (leaf node)
-        metadata : week, day, topic, news_index, "제목", "뉴스 식별자", "URL"
+        metadata : 
+        news 요약 시 => week, day, topic, news_index, "제목", "URL"
+        topic 요약 시 => week, day
         """
         insert_docs = []
         for textIdx in range(len(text_list)):
@@ -268,7 +272,7 @@ class RAPTOR:
             metadata[meta_level] = 0
             insert_docs.append(Document(page_content=text, metadata=metadata))
         return insert_docs
-
+    
     async def insert_vectordb(self, text_lists:List, documents_list:List[Document], metadata: Dict, meta_level: str, level=1, n_levels=3):
         """
         Description: 
@@ -284,8 +288,8 @@ class RAPTOR:
                     metadata[meta_level] = row['level']
                     metadata['cluster'] = row['cluster']
                     documents_list.append(Document(page_content=text, metadata=metadata))
-            vectordb = get_vectorstore("raptor_collection")
-            vectordb.add_documents(documents_list)
+            if self.vectordb is not None and documents_list is not None:
+                self.vectordb.add_documents(documents_list)
             print("vectordb add documents!!!")
         except Exception as e:
             print(f"Vector DB insert failed : {e}")
@@ -305,12 +309,11 @@ class RAPTOR:
             url = row['URL']
             metadata["news_index"]= news_cnt + 1
             metadata["제목"] = row['제목']
-            metadata["뉴스 식별자"] = row['뉴스 식별자']
             metadata["URL"] = url
             if news_cnt >= 10:
                 print(f"Extract news text finish !!! : news count : {news_cnt}")
                 break
-            if pd.notna(url):  # Check if url is not NaN
+            if isinstance(url, str) and url.strip() != "" and url is not None:
                 try:
                     documents= await self.get_documents_by_news_url(url)
                     if documents is not None:

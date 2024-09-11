@@ -7,18 +7,15 @@ from sqlalchemy.exc import OperationalError
 from langchain_postgres.vectorstores import PGVector
 from sqlalchemy import text
 from langchain_openai import OpenAIEmbeddings
+from app.config import get_settings
 
-vectordb_HOST=os.getenv('vectordb_HOST')
-vectordb_PORT=os.getenv('vectordb_PORT')
-vectordb_DB=os.getenv('vectordb_DB')
-vectordb_USER=os.getenv('vectordb_USER')
-vectordb_PW=os.getenv('vectordb_PW')
+config = get_settings()
 
 @lru_cache(maxsize=128)
 def get_vectorstore(collection_name: str) -> PGVector:
     connection_string =(
-                    f"postgresql+psycopg://{vectordb_USER}:{vectordb_PW}@"
-                    f"{vectordb_HOST}:{vectordb_PORT}/{vectordb_DB}"
+                    f"postgresql+psycopg://{config.vectordb_USER}:{config.vectordb_PW}@"
+                    f"{config.vectordb_HOST}:{config.vectordb_PORT}/{config.vectordb_DB}"
                 )
 
     try:    
@@ -41,3 +38,40 @@ def get_vectorstore(collection_name: str) -> PGVector:
         raise
 
     return vectorstore
+
+def get_summary_info(meta: str, meta_level: str):
+    """
+    Input
+    meta: topic, day 등 조회하고 싶은 정보 범위
+    meta_level: 조회하고 싶은 정보 범위를 찾기 위해 하위 메타 레벨 정보 제공 (news_level, topic_level ...)
+    
+    Output
+    meta: topic, day 등 조회하고 싶은 정보 범위
+    document: 조회하고 싶은 정보 범위에 해당하는 최상단 노드(ROOT NODE)의 텍스트
+    max_meta_level: 조회하고 싶은 정보 범위에 해당하는 최상단 노드(ROOT NODE)의 레벨
+    """
+    vectorstore = get_vectorstore("raptor_collection")
+    result_dicts = []
+    query = text(f"""
+            WITH RankedDocuments AS (
+                SELECT cmetadata->>'{meta}' AS meta
+                     , document
+                     , (cmetadata->>'{meta_level}')::INT AS meta_level
+                     , ROW_NUMBER() OVER (PARTITION BY cmetadata->>'{meta}' ORDER BY (cmetadata->>'{meta_level}')::INT DESC) AS rank
+                  FROM langchain_pg_embedding
+                 WHERE collection_id = (SELECT uuid FROM langchain_pg_collection WHERE name = 'raptor_collection')  
+            )
+            SELECT meta
+                 , document
+                 , meta_level AS max_meta_level
+              FROM RankedDocuments
+             WHERE 1=1
+               AND rank = 1 
+            ORDER BY max_meta_level DESC
+            """)
+    with vectorstore._session_maker() as session:
+        key_list = ["meta", "document", "max_meta_level"]
+        result = session.execute(query)
+        rows = result.fetchall()
+        result_dicts = [dict(zip(key_list, row)) for row in rows]
+    return result_dicts
