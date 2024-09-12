@@ -2,6 +2,7 @@ from typing import Dict, List
 from langchain_community.document_loaders import NewsURLLoader
 from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+import pandas as pd
 
 class RAG:
     def __init__(self, chunk_size=1000, overlap=200):
@@ -61,7 +62,7 @@ class RAG:
             print(f"Vector DB insert failed : {e}")
             return 1
 
-    async def load_data(self, data, metadata):
+    async def load_data(self, data: pd.DataFrame, metadata: dict):
         """
         Description: 
         data : topic dataframe data
@@ -74,7 +75,6 @@ class RAG:
             metadata["news_index"]= news_cnt + 1
             metadata["제목"] = row['제목']
             metadata["URL"] = url
-            print(f"제목: {row['제목']}, url : {url}")
             if news_cnt >= 10:
                 print(f"Extract news text finish !!! : news count : {news_cnt}")
                 break
@@ -88,10 +88,8 @@ class RAG:
                             text = document.page_content 
                             text_list = await self.split_chunk_text(text)
                             insert_docs = await self.insert_additional_info(text_list=text_list, metadata=metadata, meta_level="news_level")
-                            # Embedding
-                            insert_result = await self.insert_vectordb(documents_list=insert_docs)
-                            if insert_result == 1: # if success
-                                news_cnt += 1   
+                            await self.insert_vectordb(documents_list=insert_docs)
+                    news_cnt += 1   
                 except Exception as e:
                     print(f"Failed to process URL {url}: {e}")
                     pass

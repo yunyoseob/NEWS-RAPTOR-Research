@@ -39,20 +39,24 @@ async def news_collect_start():
         news_day = date_list[idx]
         metadata["day"]=news_day
 
-        print(f"Current Collect News Date : {news_day}")
+        print(f"Current Collect News Date >>>>>>>>>>> {news_day}")
         daily_topic_list = await get_file_list(excel_file_dir)
 
+        print("RAPTOR: Step1. load topic start ========================================> ")
         # 해당 날짜의 상위 10개 뉴스 ("topic"의 주제로 뉴스들을 재귀적 요약 처리)
         for file_idx, file_name in enumerate(tqdm(daily_topic_list, desc="Start Read Daily News")):
-            print(f"{news_day}'s read file : {file_idx}")
+            print(f"{news_day}'s read file start >>>>>>>>>>>>>>>>> {file_name}")
             metadata["topic"]=file_name
 
             file_path = excel_file_dir + "/" + file_name
             data = pd.read_excel(file_path)
             # 각 토픽별로 10개의 뉴스들이 들어감 (하나의 날짜에 총 100개의 기사)
             await raptor.load_data(data=data, metadata=metadata)
-        
+            print(f"{news_day}'s read file end >>>>>>>>>>>>>>>>> {file_name}")
+        print("RAPTOR:  Step1. load topic end ========================================> ")
+
         # day: 각 "topic"에 대한 summarize된 내용을 바탕으로 재귀적 요약 처리
+        print("RAPTOR: Step2. topic summary load ========================================> ")
         metadata["topic"]=""
         topic_summary_results = get_summary_info("topic", "news_level")
         topic_leaf_text = []
@@ -62,7 +66,7 @@ async def news_collect_start():
         topic_document = await raptor.insert_additional_info(text_list=topic_leaf_text, metadata=metadata, meta_level="topic_level")
         await raptor.insert_vectordb(text_lists=topic_leaf_text, documents_list=topic_document, metadata=metadata, meta_level="topic_level")
     
-    
+    print("RAPTOR: Step3. day summary load ========================================> ")
     # weekly: 각 "day"에 대한 summarize된 내용을 바탕으로 재귀적 요약 처리
     metadata["day"]=""
     day_summary_results = get_summary_info("day", "topic_level")
@@ -72,5 +76,6 @@ async def news_collect_start():
         day_leaf_text.append(document)
     day_document = await raptor.insert_additional_info(text_list=day_leaf_text, metadata=metadata, meta_level="day_level")
     await raptor.insert_vectordb(text_lists=day_leaf_text, documents_list=day_document, metadata=metadata, meta_level="day_level")
+    print("RAPTOR: Step3. day summary load ========================================> ")
 
 asyncio.run(news_collect_start())
