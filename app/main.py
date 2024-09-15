@@ -1,30 +1,42 @@
 import os
 import gradio as gr
-from dotenv import load_dotenv
-import openai
 from app.config import get_settings
 
 config = get_settings()
 
-# OpenAI API Key Check
-openai.api_key = config.OPENAI_API_KEY 
+try:
+    from app.assistant.graph import CompilingGraph
+    graph = CompilingGraph()
+except Exception as e:
+    print(f"FAILED :  Graph Compiling - {e}")
+else:
+    print("LOADED: Graph Compiling")
 
-def get_ai_answer(message, history):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"{message}"},
-        ]
-    )
-    return response.choices[0].message['content']
+def invoke_query(query:str, search_type:str):
+    print(f"query : {query}")
+    print(f"search_type : {search_type}")    
+    state = graph.invoke({"query": query, "search_type": search_type})
 
-chat = gr.ChatInterface(
-   fn=get_ai_answer,
-   theme="soft",
-   examples=["오늘의 핫한 기사를 알려줘"],
-   title="Korean News Search Chat Bot",
+    if search_type == "LLM":
+        generation = state["generation"]
+    else:
+        metainfo = state["metainfo"]
+        generation = state["generation"]
+
+    print(f"generation: {generation}")
+    return generation
+
+chat = gr.Interface(
+    fn=invoke_query, 
+    inputs=[
+        gr.Textbox(label="query", placeholder="빅카인즈 주간 이슈에 대해 궁금한 것을 물어보세요."),  # Textbox for query
+        gr.Radio(
+            choices=["LLM", "RAG", "RAPTOR"], 
+            label="search_type", 
+            info="Select the method to LLM Prompt"
+        ),
+    ],
+    outputs=gr.Textbox(label="Response", lines=25)  
 )
-chat.launch()
-
-
+if __name__ == "__main__":
+    chat.launch()
