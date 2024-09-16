@@ -24,27 +24,22 @@ def RetrieveDocuments(state: AgentState) -> AgentState:
         metainfo = [doc.metadata for doc in docs]
 
     elif search_type == "RAPTOR":
-        raptor_search_type = state.raptor_search_type
         vectorstore = get_vectorstore(collection_name="raptor_collection")
-        if raptor_search_type == 'Tree_Traversal_Retrieval':
-            print("Tree Type : Tree_Traversal_Retrieval")
-        elif raptor_search_type == 'collapse_tree':
-            print("Tree Type : collapse_tree")
-            retreiever = vectorstore.as_retriever(search_kwargs={'k':top_k})    
-            docs = retreiever.invoke(query)
-            contexts = [doc.page_content for doc in docs]
-            metainfo = [doc.metadata for doc in docs]
-            """
-            embeddings_question = await embeddings.embed_query(query)
-            response = vectorstore.similarity_search_with_score_by_vector(embeddings_question, k=top_k)
-            docs = []
-            for doc, score in response:
-                print(f"docs > {docs} >> score : {score} threshold :  {threshold})")
-                if score > threshold:
-                    docs.append({"doc_text":doc.page_content, "doc_meta":doc.metadata})
-            contexts = [doc["doc_text"] for doc in docs]
-            contexts = " , ".join(contexts)
-            """
+        retreiever = vectorstore.as_retriever(search_kwargs={'k':top_k})    
+        docs = retreiever.invoke(query)
+        contexts = [doc.page_content for doc in docs]
+        metainfo = [doc.metadata for doc in docs]
+        """
+        embeddings_question = await embeddings.embed_query(query)
+        response = vectorstore.similarity_search_with_score_by_vector(embeddings_question, k=top_k)
+        docs = []
+        for doc, score in response:
+            print(f"docs > {docs} >> score : {score} threshold :  {threshold})")
+            if score > threshold:
+                docs.append({"doc_text":doc.page_content, "doc_meta":doc.metadata})
+        contexts = [doc["doc_text"] for doc in docs]
+        contexts = " , ".join(contexts)
+        """
     # retriever 생성
     print(f"contexts: {contexts}")
     print(f"metainfo: {metainfo}")
