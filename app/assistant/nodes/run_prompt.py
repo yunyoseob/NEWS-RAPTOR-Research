@@ -24,7 +24,7 @@ def RunPrompt(state: AgentState) -> AgentState:
         contexts = " , ".join(contexts)
         template = """
             너는 빅카인즈 주간이슈에 대해 주요 기사들을 바탕으로 사용자의 question에 대해 답변하는 AI야.
-            아래의 <context> 내용만 이용하여 사용자의 question에 답변해줘. 모르면 알지 못한다고 말해주고 context를 봤다는 언급은 하지 말아줘.
+            아래의 <context> 내용을 참고하여 사용자의 question에 답변해줘.
             
             <context>
                 {context}
