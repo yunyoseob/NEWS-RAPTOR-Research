@@ -28,7 +28,6 @@ async def get_file_list(excel_file_dir: str) -> list[str]:
 async def news_collect_start():
     rag = RAG(chunk_size=1000, overlap=200)
     excel_file_dir_list = await get_excel_file_dir_list()
-    print(f"excel_file_dir_list : {excel_file_dir_list}")
     metadata = {}
     metadata["week"]="8월 5주"
 
@@ -37,20 +36,15 @@ async def news_collect_start():
         news_day = date_list[idx]
         metadata["day"]=news_day
 
-        print(f"Current Collect News Date >>>>>>>>>>> {news_day}")
         # 2. 날짜별로 주간 이슈 엑셀 파일
         daily_topic_list = await get_file_list(excel_file_dir)
 
-        print("RAPTOR: Step1. load topic start ========================================> ")
         # 3. 날짜별로 주간 이슈 엑셀 파일 읽어서 각 파일별로 10개의 기사 추출 후, RAG 구성
         for file_name in tqdm(daily_topic_list, desc="Start Read Daily News"):
-            print(f"{news_day}'s read file start >>>>>>>>>>>>>>>>> {file_name}")
             metadata["topic"]=file_name
 
             file_path = excel_file_dir + "/" + file_name
             data = pd.read_excel(file_path)
             await rag.load_data(data=data, metadata=metadata)
-            print(f"{news_day}'s read file end >>>>>>>>>>>>>>>>> {file_name}")
-
 
 asyncio.run(news_collect_start())

@@ -12,10 +12,10 @@ except Exception as e:
 else:
     print("LOADED: Graph Compiling")
 
-def invoke_query(query:str, search_type:str):
+def invoke_query(query:str, search_type:str, chat_history):
     print(f"query : {query}")
     print(f"search_type : {search_type}")    
-
+    metainfo = None
 
     # 예외 처리: query가 없을 때
     if query is None or query.strip() == "":
@@ -48,32 +48,36 @@ def invoke_query(query:str, search_type:str):
     else:
         metainfo_list = [[0, "No data", "No data"]]
 
-    return generation, metainfo_list, contexts
+    # 채팅 기록 업데이트
+    chat_history.append((query, generation))
 
-with gr.Blocks() as chat:
-    gr.Markdown("<h3 style='text-align: center;'>빅카인즈 주간이슈 뉴스 데이터를 활용한 RAPTOR와 RAG 기반 뉴스 응답 시스템 비교</h2>")
+    return chat_history, metainfo_list, contexts
+
+with gr.Blocks(theme=gr.themes.Default(primary_hue="blue", secondary_hue="gray")) as chat:
+    gr.Markdown("<h3 style='text-align: center;'>빅카인즈 주간이슈 뉴스 데이터를 활용한 LLM 기반 한국어 뉴스 응답 시스템 개발</h3>")
 
     with gr.Row():
-        with gr.Column():
-            query = gr.Textbox(label="query", placeholder="빅카인즈 주간 이슈에 대해 궁금한 것을 물어보세요.")
+        with gr.Column(scale=4):
+            chatbot = gr.Chatbot(label="Bigkinds News Chatbot", height=500)
+            query = gr.Textbox(label="Enter your message", placeholder="빅카인즈 주간 이슈에 대해 궁금한 것을 물어보세요.", lines=1)
             search_type = gr.Radio(
                 choices=["LLM", "RAG", "RAPTOR"], 
                 label="search_type", 
+                value="RAPTOR",
                 info="Select the method to LLM Prompt"
             )
-            submit_btn = gr.Button("Submit")
-            clear_btn = gr.Button("Clear")
-        with gr.Column():
-            response = gr.Textbox(label="Response", lines=15)
-    
-    with gr.Row():
-        with gr.Column():
+            with gr.Row():
+                submit_btn = gr.Button("Submit", variant="primary")
+                clear_btn = gr.Button("Clear", variant="secondary")
+
+        with gr.Column(scale=3):
             contexts = gr.Dataframe(headers=["Index", "Context", "Score"], label="Contexts", interactive=True)
-        with gr.Column():
             metainfo = gr.Dataframe(headers=["Index", "Key", "Value"], label="Metainfo", interactive=True)
 
-    # submit 버튼이 클릭될 때 invoke_query 함수 호출
-    submit_btn.click(invoke_query, inputs=[query, search_type], outputs=[response, metainfo, contexts])
+    submit_btn.click(invoke_query, inputs=[query, search_type, chatbot], outputs=[chatbot, metainfo, contexts])
+
+    # clear 버튼 클릭 시 채팅 기록 초기화
+    clear_btn.click(lambda: None, None, [chatbot])
 
 if __name__ == "__main__":
     chat.launch()
