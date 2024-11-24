@@ -10,7 +10,7 @@ packages = [{include = "app"}]
 python = "3.11"
 python-dotenv = "^1.0.1"
 openai = "^1.32"
-gradio = "^5.0.1"
+gradio = "^4.0.0"
 openpyxl = "^3.1.5"
 langchain = "^0.2.11"
 langchain-community = "^0.2.10"
@@ -31,6 +31,9 @@ newspaper3k = "^0.2.8"
 lxml = {extras = ["html-clean"], version = "^5.3.0"}
 lxml-html-clean = "^0.2.2"
 langgraph = "^0.2.21"
+graphviz = "^0.20.3"
+nest-asyncio = "^1.6.0"
+pyppeteer = "^2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
