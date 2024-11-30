@@ -10,22 +10,18 @@ packages = [{include = "app"}]
 python = "3.11"
 python-dotenv = "^1.0.1"
 openai = "^1.32"
-gradio = "^4.0.0"
 openpyxl = "^3.1.5"
 langchain = "^0.2.11"
 langchain-community = "^0.2.10"
 pandas = "^2.2.2"
 bs4 = "^0.0.2"
 langchain-openai = "^0.1.20"
-
 psycopg = {extras = ["binary"], version = "^3.1.19"}
 pgvector = "^0.2.5"
 langchain-postgres = "^0.0.6"
 umap = "^0.1.1"
 umap-learn = "^0.5.6"
-
 scikit-learn = "^1.5.1"
-pydantic-settings = "^2.4.0"
 unstructured = "^0.15.9"
 newspaper3k = "^0.2.8"
 lxml = {extras = ["html-clean"], version = "^5.3.0"}
@@ -33,7 +29,8 @@ lxml-html-clean = "^0.2.2"
 langgraph = "^0.2.21"
 graphviz = "^0.20.3"
 nest-asyncio = "^1.6.0"
-pyppeteer = "^2.0.0"
+gradio = "^5.7.1"
+pydantic-settings = "^2.6.1"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
