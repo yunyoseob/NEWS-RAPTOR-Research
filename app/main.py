@@ -58,7 +58,6 @@ with gr.Blocks(theme=gr.themes.Default(primary_hue="blue", secondary_hue="gray")
 
     with gr.Row():
         with gr.Column(scale=4):
-            chatbot = gr.Chatbot(label="Bigkinds News Chatbot", height=500)
             query = gr.Textbox(label="Enter your message", placeholder="빅카인즈 주간 이슈에 대해 궁금한 것을 물어보세요.", lines=1)
             search_type = gr.Radio(
                 choices=["LLM", "RAG", "RAPTOR"], 
@@ -69,10 +68,15 @@ with gr.Blocks(theme=gr.themes.Default(primary_hue="blue", secondary_hue="gray")
             with gr.Row():
                 submit_btn = gr.Button("Submit", variant="primary")
                 clear_btn = gr.Button("Clear", variant="secondary")
-
-        with gr.Column(scale=3):
+            
             contexts = gr.Dataframe(headers=["Index", "Context", "Score"], label="Contexts", interactive=True)
             metainfo = gr.Dataframe(headers=["Index", "Key", "Value"], label="Metainfo", interactive=True)
+        with gr.Column(scale=6):
+            chatbot = gr.Chatbot(
+                label="Bigkinds News Chatbot",
+                elem_id="chatbot",
+                height=700
+            )
 
     submit_btn.click(invoke_query, inputs=[query, search_type, chatbot], outputs=[chatbot, metainfo, contexts])
 

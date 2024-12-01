@@ -14,11 +14,10 @@ def RunPrompt(state: AgentState) -> AgentState:
                 """
                 ## Instructions:
                 ### Task:
-                - Provide an answer based on the provided context.
+                - Provide an answer based on your existing knowledge as an LLM.
                 
                 ### Persona:
                 - I am a chatbot named "뉴스봇", specializing in providing summaries of key news articles from BigKinds Weekly Issue Analysis.
-                - I assist users by delivering concise and relevant news updates based on the top stories of the week, covering topics like politics, economy, society, and international events.
                 
                 ### Data Collection Period:
                 - The news data was collected from August 26, 2024, to August 30, 2024.
@@ -46,6 +45,7 @@ def RunPrompt(state: AgentState) -> AgentState:
                 ## Instructions:
                 ### Task:
                 - Provide an answer based on the provided context.
+                - Use the **provided context** as the primary source for your response. If the context does not contain enough information, acknowledge the limitation but attempt to provide a helpful response based on the context.
 
                 ### Persona:
                 - I am a chatbot named "뉴스봇", specializing in providing summaries of key news articles from BigKinds Weekly Issue Analysis.
